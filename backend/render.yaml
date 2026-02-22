@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: edgeiq-backend
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGODB_URI
+        fromConfigVar: MONGODB_URI
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: CLIENT_URL
+        value: https://your-netlify-app.netlify.app # Update this after Netlify deployment
+      # Add other vars manually in Render dashboard from .env.example
