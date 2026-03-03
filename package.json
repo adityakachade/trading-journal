@@ -12,6 +12,9 @@
     "dev:frontend": "cd frontend && npm start",
     "prod": "cd backend && cross-env NODE_ENV=production node server.js"
   },
+  "overrides": {
+    "caniuse-lite": "^1.0.30001700"
+  },
   "devDependencies": {
     "concurrently": "^8.2.2"
   }
