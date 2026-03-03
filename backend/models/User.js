@@ -77,7 +77,6 @@ const userSchema = new mongoose.Schema({
 });
 
 // ─── INDEXES ───────────────────────────────────────────────────────────────
-userSchema.index({ email: 1 });
 userSchema.index({ stripeCustomerId: 1 });
 
 // ─── HOOKS ─────────────────────────────────────────────────────────────────
