@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
-    "build": "npm install && cd backend && npm install && cd ../frontend && npm install && CI=false npm run build",
+    "build": "npm install && cd backend && npm install && cd ../frontend && npm install && chmod +x node_modules/.bin/react-scripts && CI=false npm run build",
     "start": "cd backend && node server.js",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "cd backend && npm run dev",
