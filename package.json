@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
-    "build": "npm install --legacy-peer-deps && cd backend && npm install --legacy-peer-deps && cd ../frontend && npm install --legacy-peer-deps && CI=false npm run build",
+    "build": "bash build.sh",
     "start": "cd backend && node server.js",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "cd backend && npm run dev",
@@ -13,7 +13,9 @@
     "prod": "cd backend && cross-env NODE_ENV=production node server.js"
   },
   "overrides": {
-    "caniuse-lite": "^1.0.30001700"
+    "caniuse-lite": "latest",
+    "strip-json-comments": "3.1.1",
+    "enhanced-resolve": ">=5.17.0"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
