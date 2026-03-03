@@ -6,7 +6,7 @@
   "scripts": {
     "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
     "build": "bash build.sh",
-    "start": "cd backend && node server.js",
+    "start": "cd backend && cross-env NODE_ENV=production node server.js",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd frontend && npm start",
@@ -16,6 +16,9 @@
     "caniuse-lite": "latest",
     "strip-json-comments": "3.1.1",
     "enhanced-resolve": ">=5.17.0"
+  },
+  "dependencies": {
+    "cross-env": "^7.0.3"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

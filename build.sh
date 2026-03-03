@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e
 # Bulletproof Render Build Script for EdgeIQ
 
 # 1. Root Level Install
