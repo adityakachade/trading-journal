@@ -2,10 +2,12 @@ import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, Cartesia
 import { useState, useEffect } from "react";
 import { analyticsService } from "../services/analyticsService";
 import { aiService } from "../services/aiService";
+import { authService } from "../services/authService";
 import CustomTooltip from "../utils/CustomTooltip";
 import CalendarHeatmap from "../utils/CalendarHeatmap";
 
-function Dashboard({ onAddTrade }) {
+function Dashboard({ onAddTrade, onNavigate }) {
+  const user = authService.getCurrentUser();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
   const [equityData, setEquityData] = useState([]);
@@ -20,54 +22,58 @@ function Dashboard({ onAddTrade }) {
         setLoading(true);
         console.log('Fetching dashboard data...');
         const response = await analyticsService.getDashboardStats();
-        console.log('Dashboard stats response:', response);
-        
+
         // Map backend response to frontend format
         setStats({
-          totalPnL: response.totalPnL || 0,
-          totalPnLChange: 0, // Calculate change if needed
+          totalPnL: response.totalPnl || 0,
+          totalPnLChange: 0,
           winRate: response.winRate || 0,
-          winRateChange: 0, // Calculate change if needed
+          winRateChange: 0,
           avgRiskReward: response.avgRMultiple || 0,
-          avgRiskRewardChange: 0, // Calculate change if needed
+          avgRiskRewardChange: 0,
           drawdown: response.maxDrawdown || 0,
-          drawdownChange: 0, // Calculate change if needed
-          weeklyPnL: [], // Get from separate endpoint if needed
+          drawdownChange: 0,
         });
-        
+
         const equityResponse = await analyticsService.getEquityCurve();
-        console.log('Equity curve response:', equityResponse);
         setEquityData(equityResponse || []);
-        
+
+        // Fetch last 7 days for the BarChart
+        const now = new Date();
+        const dailyPnlResponse = await analyticsService.getCalendarHeatmap(now.getMonth() + 1, now.getFullYear());
+        const last7Days = (dailyPnlResponse || []).slice(-7).map(d => ({
+          day: new Date(d._id).toLocaleDateString('en-US', { weekday: 'short' }),
+          pnl: d.pnl
+        }));
+        setWeeklyPnL(last7Days);
+
         const sessionResponse = await analyticsService.getSessionStats();
-        console.log('Session response:', sessionResponse);
-        // Map session data to expected format
         setSessionData((sessionResponse || []).map(s => ({
-          session: s._id || s.session,
+          session: s.session || s._id,
           winRate: Math.round(s.winRate || 0),
           pnl: s.totalPnl || 0
         })));
-        
+
         const emotionResponse = await analyticsService.getEmotionalAnalysis();
-        console.log('Emotion response:', emotionResponse);
-        setEmotionData(emotionResponse.emotions || []);
+        setEmotionData(emotionResponse || []);
+
+        // Fetch Behavior Score
+        try {
+          const behaviorResponse = await aiService.getBehaviorSummary();
+          if (behaviorResponse) {
+            setStats(prev => ({
+              ...prev,
+              disciplineScore: behaviorResponse.disciplineScore / 10,
+              behaviors: behaviorResponse.current
+            }));
+          }
+        } catch (bErr) {
+          console.warn('Behavior summary not found:', bErr);
+        }
+
       } catch (err) {
         console.error('Failed to fetch dashboard data:', err);
-        // Set fallback data
-        setStats({
-          totalPnL: 0,
-          totalPnLChange: 0,
-          winRate: 0,
-          winRateChange: 0,
-          avgRiskReward: 0,
-          avgRiskRewardChange: 0,
-          drawdown: 0,
-          drawdownChange: 0,
-          weeklyPnL: [],
-        });
-        setEquityData([]);
-        setSessionData([]);
-        setEmotionData([]);
+        setError("Failed to load dashboard data. Please refresh.");
       } finally {
         setLoading(false);
       }
@@ -76,7 +82,7 @@ function Dashboard({ onAddTrade }) {
     fetchDashboardData();
     // Make refresh function available globally
     window.refreshDashboard = fetchDashboardData;
-    
+
     // Cleanup
     return () => {
       delete window.refreshDashboard;
@@ -172,31 +178,49 @@ function Dashboard({ onAddTrade }) {
       </div>
 
       <div className="bottom-grid">
-        <div className="card">
+        <div className="card" style={{ position: "relative", overflow: "hidden" }}>
           <div className="card-header">
-            <div>
-              <div className="card-title">Discipline Score</div>
-              <div className="card-sub">AI-powered behavior rating</div>
-            </div>
+            <div><div className="card-title">Discipline Score</div><div className="card-sub">AI-powered behavior rating</div></div>
             <span className="badge badge-purple">PRO</span>
           </div>
-          <div className="gauge-wrap">
-            <div className="gauge-score">7.4</div>
-            <div className="gauge-label">/ 10 — Good</div>
-            <div className="gauge-bars">
-              {[
-                { label: "Risk", val: 82, color: "#00d4aa" },
-                { label: "Emotion", val: 65, color: "#6366f1" },
-                { label: "Strategy", val: 78, color: "#f59e0b" },
-                { label: "Patience", val: 70, color: "#00d4aa" },
-              ].map((b, i) => (
-                <div key={i} className="gauge-bar-item">
-                  <div className="gauge-bar-label">{b.label}</div>
-                  <div className="gauge-bar-track"><div className="gauge-bar-fill" style={{ width: `${b.val}%`, background: b.color }} /></div>
-                </div>
-              ))}
+
+          {user?.subscriptionTier === "free" ? (
+            <div style={{
+              marginTop: 20,
+              padding: "30px 10px",
+              textAlign: "center",
+              background: "rgba(0,0,0,0.2)",
+              borderRadius: 12,
+              border: "1px dashed var(--border)"
+            }}>
+              <div style={{ fontSize: 24, marginBottom: 8 }}>🔒</div>
+              <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Pro Performance Tracking</div>
+              <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 16 }}>
+                Unlock behavioral scoring to track your trading discipline.
+              </div>
+              <button className="btn btn-primary btn-sm" onClick={() => onNavigate('billing')}>
+                Get Pro
+              </button>
             </div>
-          </div>
+          ) : (
+            <div className="gauge-wrap">
+              <div className="gauge-score">{stats?.disciplineScore || "—"}</div>
+              <div className="gauge-label">/ 10 — {(stats?.disciplineScore || 0) >= 8 ? "Excellent" : (stats?.disciplineScore || 0) >= 6 ? "Good" : "Needs Work"}</div>
+              <div className="gauge-bars">
+                {[
+                  { label: "Overtrading", val: stats?.behaviors?.overtradingDetected ? 30 : 100, color: stats?.behaviors?.overtradingDetected ? "var(--red)" : "#00d4aa" },
+                  { label: "Revenge", val: stats?.behaviors?.revengeTradeDetected ? 30 : 100, color: stats?.behaviors?.revengeTradeDetected ? "var(--red)" : "#6366f1" },
+                  { label: "FOMO", val: stats?.behaviors?.fomoDetected ? 30 : 100, color: stats?.behaviors?.fomoDetected ? "var(--red)" : "#f59e0b" },
+                  { label: "Risk Consistency", val: stats?.behaviors?.inconsistentRisk ? 30 : 100, color: stats?.behaviors?.inconsistentRisk ? "var(--red)" : "#00d4aa" },
+                ].map((b, i) => (
+                  <div key={i} className="gauge-bar-item">
+                    <div className="gauge-bar-label">{b.label}</div>
+                    <div className="gauge-bar-track"><div className="gauge-bar-fill" style={{ width: `${b.val}%`, background: b.color }} /></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="card">
@@ -215,7 +239,7 @@ function Dashboard({ onAddTrade }) {
               </PieChart>
             </ResponsiveContainer>
             <div className="pie-legend" style={{ flex: 1 }}>
-              {emotionData.map((e, i) => (
+              {Array.isArray(emotionData) && emotionData.map((e, i) => (
                 <div key={i} className="pie-legend-item">
                   <div className="pie-legend-left"><div className="pie-dot" style={{ background: e.color }} /><span className="pie-name">{e.name}</span></div>
                   <span className="pie-pct">{e.value}%</span>

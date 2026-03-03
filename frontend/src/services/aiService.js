@@ -67,6 +67,16 @@ export const aiService = {
     }
   },
 
+  getBehaviorSummary: async () => {
+    try {
+      const response = await api.get('/ai/behavior');
+      return response.data.data;
+    } catch (error) {
+      console.error('Failed to fetch behavior summary:', error);
+      return null;
+    }
+  },
+
   generateWeeklyReport: async () => {
     try {
       const response = await api.post('/ai/weekly-report');
@@ -77,6 +87,18 @@ export const aiService = {
         report: "Unable to generate AI weekly report at this time.",
         recommendations: [],
         analysis: ""
+      };
+    }
+  },
+
+  generateReport: async (type) => {
+    try {
+      const response = await api.post('/ai/generate-report', { type });
+      return response.data.data;
+    } catch (error) {
+      console.error('Failed to generate report:', error);
+      return {
+        content: "Failed to generate AI report at this time."
       };
     }
   }

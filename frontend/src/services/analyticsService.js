@@ -48,7 +48,7 @@ export const analyticsService = {
       return response.data.data;
     } catch (error) {
       console.error('Failed to fetch emotional analysis:', error);
-      return { emotions: [] };
+      return [];
     }
   },
 

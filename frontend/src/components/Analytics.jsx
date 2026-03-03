@@ -15,20 +15,20 @@ function Analytics() {
     const fetchAnalyticsData = async () => {
       try {
         setLoading(true);
-        
+
         // Fetch strategy performance data
         const strategyResponse = await analyticsService.getWinRateByStrategy();
         console.log('Strategy response:', strategyResponse);
-        
+
         // Fetch risk metrics data
         const riskResponse = await analyticsService.getRiskMetrics();
         console.log('Risk response:', riskResponse);
-        
+
         // Fetch all trades to calculate real risk and monthly data
         const tradesResponse = await tradeService.getAllTrades();
         const trades = tradesResponse.data || tradesResponse.trades || [];
         console.log('Trades response:', trades);
-        
+
         // Process strategy data
         const processedStrategies = (strategyResponse || []).map(s => ({
           name: s.strategy || 'Unknown',
@@ -36,52 +36,52 @@ function Analytics() {
           pnl: s.totalPnl || 0,
           trades: s.totalTrades || 0
         }));
-        
+
         // Calculate risk data from actual trades
         const processedRisk = trades
           .filter(t => t.tradeDate)
           .sort((a, b) => new Date(a.tradeDate) - new Date(b.tradeDate))
           .map((trade, index) => {
             // Calculate risk percentage based on position size and entry price
-            const riskPercent = trade.positionSize && trade.entryPrice 
+            const riskPercent = trade.positionSize && trade.entryPrice
               ? (trade.positionSize * 100 / trade.entryPrice).toFixed(2)
               : 1.0; // Default to 1% if not calculable
-            
+
             const date = new Date(trade.tradeDate);
             const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            
+
             return {
               t: dateStr,
               risk: parseFloat(riskPercent)
             };
           });
-        
+
         // Calculate monthly PnL data from actual trades
         const monthlyPnL = {};
         trades.forEach(trade => {
           if (trade.tradeDate && trade.pnl !== undefined) {
             const date = new Date(trade.tradeDate);
             const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-            
+
             if (!monthlyPnL[monthKey]) {
               monthlyPnL[monthKey] = 0;
             }
             monthlyPnL[monthKey] += trade.pnl || 0;
           }
         });
-        
+
         const processedMonthly = Object.entries(monthlyPnL).map(([month, pnl]) => ({
           month,
           pnl: Math.round(pnl * 100) / 100 // Convert to 2 decimal places
         }));
-        
+
         setStrategyData(processedStrategies);
         setRiskData(processedRisk);
         setMonthlyData(processedMonthly);
       } catch (err) {
         console.error('Failed to fetch analytics data:', err);
         setError('Failed to load analytics data');
-        
+
         // Set fallback data
         setStrategyData([
           { name: "Trend Follow", wr: 78, pnl: 2100, trades: 18 },
@@ -106,10 +106,10 @@ function Analytics() {
     };
 
     fetchAnalyticsData();
-    
+
     // Make refresh function available globally
     window.refreshAnalytics = fetchAnalyticsData;
-    
+
     // Cleanup
     return () => {
       delete window.refreshAnalytics;
@@ -190,7 +190,7 @@ function Analytics() {
           <BarChart data={monthlyData} barSize={36}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
             <XAxis dataKey="month" tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fill: "#64748b", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `₹${v}`} />
+            <YAxis tick={{ fill: "#64748b", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `₹${v.toLocaleString('en-IN')}`} />
             <Tooltip content={<CustomTooltip />} />
             <Bar dataKey="pnl" radius={[6, 6, 0, 0]}>
               {monthlyData.map((v, i) => <Cell key={i} fill={v.pnl >= 0 ? "#00d4aa" : "#ef4444"} fillOpacity={0.8} />)}

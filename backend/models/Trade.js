@@ -60,7 +60,7 @@ const tradeSchema = new mongoose.Schema({
   // ─── CONTEXT ───────────────────────────────────────────────────────────
   strategy: {
     type: String,
-    enum: ["Breakout", "Reversal", "Trend Follow", "HTF Rejection", "Momentum", "Scalp", "News", "Other"],
+    enum: ["Breakout", "Reversal", "Trend Follow", "HTF Rejection", "Momentum", "Scalp", "News", "Live Execution", "Other"],
     default: "Other",
   },
   session: {
@@ -69,6 +69,7 @@ const tradeSchema = new mongoose.Schema({
     default: "London",
   },
   tradeDate: { type: Date, required: true, default: Date.now },
+  exitDate: { type: Date, default: null },
   duration: { type: Number, default: null }, // minutes
 
   // ─── PSYCHOLOGY ────────────────────────────────────────────────────────
@@ -86,6 +87,12 @@ const tradeSchema = new mongoose.Schema({
     type: String,
     enum: ["FOMO Entry", "Revenge Trade", "Overtrading", "Moved Stop", "Early Exit", "Late Entry", "No Setup", "Sized Too Big", null],
     default: null,
+  },
+  psychologyScore: {
+    type: Number,
+    min: 1,
+    max: 10,
+    default: 5,
   },
 
   // ─── MEDIA & NOTES ─────────────────────────────────────────────────────
@@ -118,6 +125,13 @@ tradeSchema.pre("save", function (next) {
       : this.entryPrice - this.exitPrice;
 
     this.pnl = parseFloat((diff * this.positionSize).toFixed(2));
+    this.pnlPercent = parseFloat(((this.pnl / (this.entryPrice * this.positionSize)) * 100).toFixed(2));
+
+    // Duration calculation
+    if (this.exitDate) {
+      const ms = new Date(this.exitDate) - new Date(this.tradeDate);
+      this.duration = Math.max(0, Math.floor(ms / (1000 * 60)));
+    }
 
     // R:R calculation
     if (this.stopLoss) {
@@ -133,7 +147,9 @@ tradeSchema.pre("save", function (next) {
     // Status
     if (this.pnl > 0) this.status = "win";
     else if (this.pnl < 0) this.status = "loss";
-    else this.status = "breakeven";
+    else if (this.pnl === 0) this.status = "breakeven";
+  } else {
+    this.status = "open";
   }
   next();
 });

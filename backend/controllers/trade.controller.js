@@ -66,17 +66,11 @@ exports.createTrade = catchAsync(async (req, res, next) => {
   console.log('Screenshot URL starts with:', req.body.screenshotUrl?.substring(0, 50) + '...');
 
   const tradeData = { ...req.body, userId: user._id };
-  
-  // Handle large screenshot URLs by truncating if necessary
-  if (tradeData.screenshotUrl && tradeData.screenshotUrl.length > 1000000) {
-    console.log('Screenshot URL too large, truncating...');
-    tradeData.screenshotUrl = tradeData.screenshotUrl.substring(0, 1000000) + '...[truncated]';
-  }
-  
+
   console.log('Final tradeData screenshotUrl:', tradeData.screenshotUrl?.substring(0, 50) + '...');
 
   const trade = await Trade.create(tradeData);
-  
+
   console.log('Created trade screenshotUrl:', trade.screenshotUrl?.substring(0, 50) + '...');
 
   // Update user counters
@@ -103,7 +97,7 @@ exports.createTrade = catchAsync(async (req, res, next) => {
   }
 
   // Run behavior analysis in background
-  behaviorService.analyzeBehavior(user._id).catch(() => {});
+  behaviorService.analyzeBehavior(user._id).catch(() => { });
 
   sendSuccess(res, { trade }, 201);
 });
@@ -121,7 +115,7 @@ exports.updateTrade = catchAsync(async (req, res, next) => {
 
   // Re-run AI if exit price was just added and user is Pro
   if (req.body.exitPrice && req.user.isPro) {
-    aiService.analyzeTrade(trade._id, req.user.subscriptionTier).catch(() => {});
+    aiService.analyzeTrade(trade._id, req.user.subscriptionTier).catch(() => { });
   }
 
   sendSuccess(res, { trade });
@@ -182,14 +176,14 @@ exports.bulkImport = catchAsync(async (req, res, next) => {
 exports.exportTrades = catchAsync(async (req, res) => {
   const { format = 'csv' } = req.query;
   const userId = req.user._id;
-  
+
   const trades = await Trade.find({ userId }).sort('-tradeDate').lean();
-  
+
   if (format === 'csv') {
     const csv = [
       'Date,Symbol,Direction,Entry,Exit,Position Size,PnL,Status,Strategy,Session,Emotion Before,Emotion After,Notes'
     ];
-    
+
     trades.forEach(trade => {
       csv.push([
         trade.tradeDate.toISOString().split('T')[0],
@@ -207,7 +201,7 @@ exports.exportTrades = catchAsync(async (req, res) => {
         `"${(trade.notes || '').replace(/"/g, '""')}"`
       ].join(','));
     });
-    
+
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', `attachment; filename="trades_${new Date().toISOString().split('T')[0]}.csv"`);
     res.send(csv.join('\n'));

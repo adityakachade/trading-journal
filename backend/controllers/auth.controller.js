@@ -22,7 +22,7 @@ exports.register = catchAsync(async (req, res, next) => {
   });
 
   // Send verification email (non-blocking)
-  emailService.sendVerificationEmail(user.email, user.name, emailToken).catch(() => {});
+  emailService.sendVerificationEmail(user.email, user.name, emailToken).catch(() => { });
 
   const { accessToken, refreshToken } = generateTokenPair(user._id, user.role);
 
@@ -42,7 +42,14 @@ exports.login = catchAsync(async (req, res, next) => {
   const { email, password } = req.body;
 
   const user = await User.findOne({ email }).select("+password +refreshTokens");
-  if (!user || !(await user.comparePassword(password))) {
+  if (!user) {
+    logger.warn(`Login failed: User not found for email ${email}`);
+    return next(new AppError("Invalid email or password.", 401));
+  }
+
+  const isMatch = await user.comparePassword(password);
+  if (!isMatch) {
+    logger.warn(`Login failed: Password mismatch for email ${email}`);
     return next(new AppError("Invalid email or password.", 401));
   }
 
@@ -133,7 +140,7 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   user.passwordResetExpires = Date.now() + 60 * 60 * 1000; // 1h
   await user.save({ validateBeforeSave: false });
 
-  emailService.sendPasswordResetEmail(user.email, user.name, resetToken).catch(() => {});
+  emailService.sendPasswordResetEmail(user.email, user.name, resetToken).catch(() => { });
 
   sendSuccess(res, { message: "If that email exists, a reset link has been sent." });
 });

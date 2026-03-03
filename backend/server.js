@@ -24,7 +24,9 @@ const reportRoutes = require("./routes/report.routes");
 const app = express();
 
 // ─── DB CONNECTIONS ────────────────────────────────────────────────────────
-connectDB();
+connectDB().catch(() => {
+  logger.warn("MongoDB connection failed, continuing without database...");
+});
 connectRedis();
 
 // ─── STRIPE WEBHOOK (raw body needed before json parser) ──────────────────
@@ -39,8 +41,8 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization"],
 }));
 app.use(compression());
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.use(mongoSanitize());
 
 // ─── LOGGING ───────────────────────────────────────────────────────────────
@@ -63,21 +65,33 @@ app.get("/health", (req, res) => res.json({
 }));
 
 // ─── API ROUTES ────────────────────────────────────────────────────────────
-app.use("/api/auth",      authRoutes);
-app.use("/api/users",     userRoutes);
-app.use("/api/trades",    tradeRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/trades", tradeRoutes);
 app.use("/api/analytics", analyticsRoutes);
-app.use("/api/ai",        aiRoutes);
-app.use("/api/stripe",    stripeRoutes);
-app.use("/api/reports",   reportRoutes);
+app.use("/api/ai", aiRoutes);
+app.use("/api/stripe", stripeRoutes);
+app.use("/api/reports", reportRoutes);
+
+const path = require("path");
 
 // ─── ERROR HANDLING ────────────────────────────────────────────────────────
 app.use(notFound);
 app.use(globalErrorHandler);
 
+// ─── PRODUCTION SERVING ────────────────────────────────────────────────────
+if (process.env.NODE_ENV === "production") {
+  const frontendBuildPath = path.join(__dirname, "../frontend/build");
+  app.use(express.static(frontendBuildPath));
+
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(frontendBuildPath, "index.html"));
+  });
+}
+
 // ─── START ─────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   logger.info(`🚀 EdgeIQ API running on port ${PORT} [${process.env.NODE_ENV}]`);
 });
 

@@ -6,15 +6,17 @@ let client = null;
 const connectRedis = () => {
   try {
     client = new Redis(process.env.REDIS_URL || "redis://localhost:6379", {
-      maxRetriesPerRequest: 3,
+      maxRetriesPerRequest: 1,
       retryStrategy: (times) => {
-        if (times > 5) {
+        if (times > 2) {
           logger.warn("Redis retry limit reached. Running without cache.");
           return null;
         }
-        return Math.min(times * 200, 2000);
+        return Math.min(times * 100, 500);
       },
       lazyConnect: true,
+      connectTimeout: 1000,
+      commandTimeout: 1000,
     });
 
     client.on("connect", () => logger.info("✅ Redis connected"));

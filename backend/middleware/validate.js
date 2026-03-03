@@ -40,7 +40,7 @@ const resetPasswordSchema = z.object({
 // ─── TRADE SCHEMAS ──────────────────────────────────────────────────────────
 const MARKETS = ["forex", "crypto", "stocks", "indices", "commodities", "futures"];
 const DIRECTIONS = ["LONG", "SHORT"];
-const STRATEGIES = ["Breakout", "Reversal", "Trend Follow", "HTF Rejection", "Momentum", "Scalp", "News", "Other"];
+const STRATEGIES = ["Breakout", "Reversal", "Trend Follow", "HTF Rejection", "Momentum", "Scalp", "News", "Live Execution", "Other"];
 const SESSIONS = ["London", "New York", "Asia", "Overlap", "Off-Hours"];
 const EMOTIONS_BEFORE = ["Confident", "Neutral", "Anxious", "FOMO", "Revenge", "Excited", "Bored", "Fearful"];
 const EMOTIONS_AFTER = ["Satisfied", "Neutral", "Frustrated", "Relieved", "Regretful", "Euphoric", "Disappointed"];
@@ -61,6 +61,7 @@ const createTradeSchema = z.object({
   emotionBefore: z.enum(EMOTIONS_BEFORE).default("Neutral"),
   emotionAfter: z.enum(EMOTIONS_AFTER).optional(),
   mistakeTag: z.enum(MISTAKES).optional().nullable(),
+  psychologyScore: z.number().min(1).max(10).default(5),
   notes: z.string().max(2000).optional().default(""),
   tags: z.array(z.string().max(30)).max(10).optional().default([]),
   screenshotUrl: z.string().url().or(z.string().startsWith("data:image/")).optional().nullable(),

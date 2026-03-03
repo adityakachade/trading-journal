@@ -6,6 +6,8 @@ import Journal from "./components/Journal";
 import Analytics from "./components/Analytics";
 import LiveTradingChart from "./components/LiveTradingChart";
 import AIInsights from "./components/AIInsights";
+import Billing from "./components/Billing";
+import Settings from "./components/Settings";
 import AddTradeModal from "./components/AddTradeModal";
 import Login from "./components/Login";
 import ThemeToggle from "./components/ThemeToggle";
@@ -22,6 +24,12 @@ export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
+  const [editingTrade, setEditingTrade] = useState(null);
+
+  const handleAddTrade = () => {
+    setEditingTrade(null);
+    setShowModal(true);
+  };
 
   // Save page to localStorage whenever it changes
   useEffect(() => {
@@ -110,20 +118,40 @@ export default function App() {
             <div className="topbar-actions">
               <ThemeToggle />
               <button className="btn btn-ghost">📤 Export PDF</button>
-              <button className="btn btn-primary" onClick={() => setShowModal(true)}>+ Log Trade</button>
+              <button className="btn btn-primary" onClick={handleAddTrade}>+ Log Trade</button>
             </div>
           </div>
           <div className="content scrollbar-hide">
-            {page === "dashboard" && <Dashboard onAddTrade={() => setShowModal(true)} />}
-            {page === "journal" && <Journal onAddTrade={() => setShowModal(true)} />}
-            {page === "analytics" && <Analytics />}
-            {page === "live" && <LiveTradingChart />}
-            {page === "ai" && <AIInsights />}
+            {page === "dashboard" && <Dashboard onAddTrade={handleAddTrade} onNavigate={setPage} />}
+            {page === "journal" && (
+              <Journal
+                onAddTrade={handleAddTrade}
+                onNavigate={setPage}
+                onEditTrade={(t) => {
+                  setEditingTrade(t);
+                  setShowModal(true);
+                }}
+                onCloneTrade={(t) => {
+                  const cloned = { ...t };
+                  delete cloned._id;
+                  delete cloned.id;
+                  delete cloned.aiAnalysis;
+                  cloned.tradeDate = new Date().toISOString();
+                  setEditingTrade(cloned);
+                  setShowModal(true);
+                }}
+              />
+            )}
+            {page === "analytics" && <Analytics onNavigate={setPage} />}
+            {page === "live" && <LiveTradingChart onNavigate={setPage} />}
+            {page === "ai" && <AIInsights onNavigate={setPage} />}
+            {page === "billing" && <Billing onNavigate={setPage} />}
+            {page === "settings" && <Settings onNavigate={setPage} />}
           </div>
         </div>
       </div>
 
-      {showModal && <AddTradeModal onClose={() => setShowModal(false)} />}
+      {showModal && <AddTradeModal trade={editingTrade} onClose={() => setShowModal(false)} />}
     </>
   );
 }
