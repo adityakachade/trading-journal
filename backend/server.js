@@ -75,10 +75,6 @@ app.use("/api/reports", reportRoutes);
 
 const path = require("path");
 
-// ─── ERROR HANDLING ────────────────────────────────────────────────────────
-app.use(notFound);
-app.use(globalErrorHandler);
-
 // ─── PRODUCTION SERVING ────────────────────────────────────────────────────
 if (process.env.NODE_ENV === "production") {
   const frontendBuildPath = path.join(__dirname, "../frontend/dist");
@@ -88,6 +84,10 @@ if (process.env.NODE_ENV === "production") {
     res.sendFile(path.join(frontendBuildPath, "index.html"));
   });
 }
+
+// ─── ERROR HANDLING ────────────────────────────────────────────────────────
+app.use(notFound);
+app.use(globalErrorHandler);
 
 // ─── START ─────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000;
