@@ -3,19 +3,21 @@
   "version": "1.0.0",
   "description": "AI-Powered Trading Journal Monorepo",
   "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
   "scripts": {
-    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
-    "build": "bash build.sh",
-    "start": "cd backend && cross-env NODE_ENV=production node server.js",
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:backend": "cd backend && npm run dev",
-    "dev:frontend": "cd frontend && npm start",
+    "install:all": "npm install",
+    "build": "npm install && npm run build --workspaces --if-present",
+    "start": "npm run prod",
+    "dev": "concurrently \"npm run dev -w backend\" \"npm run dev -w frontend\"",
+    "dev:backend": "npm run dev -w backend",
+    "dev:frontend": "npm run dev -w frontend",
     "prod": "cd backend && cross-env NODE_ENV=production node server.js"
   },
   "overrides": {
-    "caniuse-lite": "latest",
-    "strip-json-comments": "3.1.1",
-    "enhanced-resolve": ">=5.17.0"
+    "caniuse-lite": "latest"
   },
   "dependencies": {
     "cross-env": "^7.0.3"

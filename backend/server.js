@@ -81,7 +81,7 @@ app.use(globalErrorHandler);
 
 // ─── PRODUCTION SERVING ────────────────────────────────────────────────────
 if (process.env.NODE_ENV === "production") {
-  const frontendBuildPath = path.join(__dirname, "../frontend/build");
+  const frontendBuildPath = path.join(__dirname, "../frontend/dist");
   app.use(express.static(frontendBuildPath));
 
   app.get("*", (req, res) => {
